@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stop_smoke/main.dart';
+import 'package:stop_smoke/screens/UserSettingPage.dart';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart'; // Firebase Authentication import
@@ -48,9 +49,9 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
           email: _email,
           password: _password,
         );
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => UserSettingsPage()),
         );
       } on FirebaseAuthException catch (e) {
         String message;
