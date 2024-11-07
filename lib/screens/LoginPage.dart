@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:stop_smoke/screens/SignUpPage.dart';
 import 'package:stop_smoke/main.dart';
-import 'dart:ui'; // ImageFilter를 사용하기 위한 import
-import 'dart:math' as math; // math 라이브러리 사용을 위한 import
-
-
+import 'dart:ui';
+import 'dart:math' as math;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -14,6 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final _formKey = GlobalKey<FormState>();
   String _email = '';
   String _password = '';
@@ -37,6 +37,25 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _signIn() async {
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: _email.trim(),
+        password: _password.trim(),
+      );
+      // 로그인 성공 시 홈 페이지로 이동
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+    } catch (e) {
+      // 로그인 실패 시 오류 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('로그인 실패: ${e.toString()}')),
+      );
+    }
   }
 
   @override
@@ -208,10 +227,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       child: ElevatedButton(
         onPressed: () {
           if (_formKey.currentState!.validate()) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const HomePage()),
-            );
+            _signIn(); // Firebase 로그인 메서드 호출
           }
         },
         style: ElevatedButton.styleFrom(
