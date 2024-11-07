@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:stop_smoke/main.dart';
-import 'package:stop_smoke/screens/UserSettingPage.dart';
-import 'dart:math' as math;
-import 'dart:ui';
-import 'package:firebase_auth/firebase_auth.dart'; // Firebase Authentication import
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:math' as math; // 추가된 부분
+import 'package:stop_smoke/screens/UserSettingPage.dart'; // UserSettingsPage import
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -16,9 +15,7 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
   final _formKey = GlobalKey<FormState>();
   String _email = '';
   String _password = '';
-  String _confirmPassword = '';
   String _nickname = '';
-  final FirebaseAuth _auth = FirebaseAuth.instance; // FirebaseAuth instance 생성
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -41,67 +38,28 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  // 회원가입 함수
-  void _signUp() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-          email: _email,
-          password: _password,
-        );
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => UserSettingsPage()),
-        );
-      } on FirebaseAuthException catch (e) {
-        String message;
-        if (e.code == 'weak-password') {
-          message = '비밀번호가 너무 약합니다.';
-        } else if (e.code == 'email-already-in-use') {
-          message = '이미 사용 중인 이메일 주소입니다.';
-        } else {
-          message = '회원가입에 실패했습니다. 다시 시도해 주세요.';
-        }
-        _showError(message);
-      } catch (e) {
-        _showError('오류가 발생했습니다. 다시 시도해 주세요.');
-      }
-    }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // Animated Background
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _animation,
               builder: (context, child) {
                 return CustomPaint(
-                  painter: BackgroundPainter(
-                    animation: _animation.value,
-                  ),
+                  painter: BackgroundPainter(animation: _animation.value),
                 );
               },
             ),
           ),
-          // Main Content
           SafeArea(
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   children: [
-                    const SizedBox(height: 40),
-                    // Logo Animation
+                    const SizedBox(height: 60),
                     TweenAnimationBuilder(
                       tween: Tween<double>(begin: 0, end: 1),
                       duration: const Duration(milliseconds: 1000),
@@ -113,11 +71,11 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
                       },
                       child: Icon(
                         Icons.eco,
-                        size: 60,
+                        size: 80,
                         color: Colors.blue[600],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     Text(
                       '회원가입',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -125,100 +83,10 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '금연 실천과 후원으로\n더 나은 세상을 만들어보세요',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    // Signup Form with Glass Effect
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.2),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                spreadRadius: 1,
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(24),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              children: [
-                                _buildTextField(
-                                  hint: '닉네임',
-                                  icon: Icons.person_outline,
-                                  onChanged: (v) => _nickname = v,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return '닉네임을 입력해주세요';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                _buildTextField(
-                                  hint: '이메일',
-                                  icon: Icons.email_outlined,
-                                  onChanged: (v) => _email = v,
-                                  validator: (value) {
-                                    if (value == null || !value.contains('@')) {
-                                      return '올바른 이메일 주소를 입력해주세요';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                _buildTextField(
-                                  hint: '비밀번호',
-                                  icon: Icons.lock_outline,
-                                  isPassword: true,
-                                  onChanged: (v) => _password = v,
-                                  validator: (value) {
-                                    if (value == null || value.length < 6) {
-                                      return '비밀번호는 6자 이상이어야 합니다';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                _buildTextField(
-                                  hint: '비밀번호 확인',
-                                  icon: Icons.lock_outline,
-                                  isPassword: true,
-                                  onChanged: (v) => _confirmPassword = v,
-                                  validator: (value) {
-                                    if (value != _password) {
-                                      return '비밀번호가 일치하지 않습니다';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 24),
-                                _buildSignUpButton(),
-                                const SizedBox(height: 16),
-                                _buildLoginLink(),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: 10),
+                    _buildSignUpForm(),
+                    const SizedBox(height: 24),
+                    _buildLoginLink(context),
                   ],
                 ),
               ),
@@ -229,17 +97,51 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
     );
   }
 
+  Widget _buildSignUpForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          _buildTextField(
+            hint: '닉네임',
+            icon: Icons.person_outline,
+            onChanged: (v) => _nickname = v,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            hint: '이메일',
+            icon: Icons.email_outlined,
+            onChanged: (v) => _email = v,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            hint: '비밀번호',
+            icon: Icons.lock_outline,
+            isPassword: true,
+            onChanged: (v) => _password = v,
+          ),
+          const SizedBox(height: 24),
+          _buildSignUpButton(),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTextField({
     required String hint,
     required IconData icon,
     bool isPassword = false,
     required Function(String) onChanged,
-    required String? Function(String?)? validator,
   }) {
     return TextFormField(
       obscureText: isPassword,
       onChanged: onChanged,
-      validator: validator,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return '필수 입력사항입니다';
+        }
+        return null;
+      },
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: Icon(icon, color: Colors.blue[600]),
@@ -256,10 +158,6 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide(color: Colors.blue[600]!),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: Colors.red[300]!),
         ),
       ),
     );
@@ -282,7 +180,36 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
         ],
       ),
       child: ElevatedButton(
-        onPressed: _signUp,
+        onPressed: () async {
+          if (_formKey.currentState!.validate()) {
+            try {
+              // Firebase Auth에 사용자 등록
+              UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                email: _email,
+                password: _password,
+              );
+
+              // Firestore에 사용자 정보 저장
+              await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+                'email': _email,
+                'nickname': _nickname,
+                'start_date': Timestamp.now(),
+                'daily_smoking_amount': 0, // 초기값 설정
+                'total_money_saved': 0, // 초기값 설정
+              });
+
+              // 사용자 설정 페이지로 이동
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserSettingsPage(email: _email), // email 전달
+                ),
+              );
+            } catch (e) {
+              print('회원가입 실패: $e');
+            }
+          }
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.white,
@@ -301,24 +228,17 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildLoginLink() {
+  Widget _buildLoginLink(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          '이미 계정이 있으신가요?',
-          style: TextStyle(color: Colors.grey[600]),
-        ),
         TextButton(
           onPressed: () {
             Navigator.pop(context);
           },
           child: Text(
-            '로그인',
-            style: TextStyle(
-              color: Colors.blue[600],
-              fontWeight: FontWeight.bold,
-            ),
+            '이미 계정이 있으신가요? 로그인하기',
+            style: TextStyle(color: Colors.grey[600]),
           ),
         ),
       ],
@@ -326,7 +246,6 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
   }
 }
 
-// BackgroundPainter 클래스는 로그인 페이지와 동일하게 사용
 class BackgroundPainter extends CustomPainter {
   final double animation;
 
