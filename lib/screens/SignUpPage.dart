@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:stop_smoke/main.dart';
 import 'dart:math' as math;
 import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart'; // Firebase Authentication import
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -15,7 +17,7 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
   String _password = '';
   String _confirmPassword = '';
   String _nickname = '';
-  String _phoneNumber = '';
+  final FirebaseAuth _auth = FirebaseAuth.instance; // FirebaseAuth instance 생성
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -38,12 +40,46 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
     super.dispose();
   }
 
+  // 회원가입 함수
+  void _signUp() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+          email: _email,
+          password: _password,
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      } on FirebaseAuthException catch (e) {
+        String message;
+        if (e.code == 'weak-password') {
+          message = '비밀번호가 너무 약합니다.';
+        } else if (e.code == 'email-already-in-use') {
+          message = '이미 사용 중인 이메일 주소입니다.';
+        } else {
+          message = '회원가입에 실패했습니다. 다시 시도해 주세요.';
+        }
+        _showError(message);
+      } catch (e) {
+        _showError('오류가 발생했습니다. 다시 시도해 주세요.');
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // Animated Background (로그인 페이지와 동일)
+          // Animated Background
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _animation,
@@ -245,12 +281,7 @@ class _SignUpPageState extends State<SignUpPage> with SingleTickerProviderStateM
         ],
       ),
       child: ElevatedButton(
-        onPressed: () {
-          if (_formKey.currentState!.validate()) {
-            // 회원가입 처리 로직
-            // TODO: Implement signup functionality
-          }
-        },
+        onPressed: _signUp,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.white,
