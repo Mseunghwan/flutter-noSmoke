@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui';
+import 'package:stop_smoke/main.dart'; // HomePage import 추가
 
 class UserSettingsPage extends StatefulWidget {
   final String email;
@@ -13,15 +14,17 @@ class UserSettingsPage extends StatefulWidget {
 
 class _UserSettingsPageState extends State<UserSettingsPage> {
   late DateTime _startDate;
-  late int _dailySmoking;
-  String _nickname = '';
-  double _totalMoneySaved = 0;
+  String _selectedTobaccoType = '연초(궐련형)';
+  int _dailySmoking = 1;
+  String _addictionLevel = '보통';
+
+  final List<String> _tobaccoTypes = ['연초(궐련형)', '전자담배', '기타'];
+  final List<String> _addictionLevels = ['매우심함', '심함', '보통', '참을 수 있음', '참기 쉬움'];
 
   @override
   void initState() {
     super.initState();
-    _startDate = DateTime.now();
-    _dailySmoking = 0;
+    _startDate = DateTime.now(); // 기본값을 오늘로 설정
   }
 
   @override
@@ -67,7 +70,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         ),
         const SizedBox(width: 8),
         Text(
-          '회원 설정',
+          '금연 설정',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -104,11 +107,11 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             children: [
               _buildDatePicker(),
               const SizedBox(height: 24),
-              _buildDailySmokingInput(),
+              _buildTobaccoTypeSelector(),
               const SizedBox(height: 24),
-              _buildNicknameInput(),
+              _buildDailySmokingSelector(),
               const SizedBox(height: 24),
-              _buildTotalMoneySavedInput(),
+              _buildAddictionLevelSelector(),
               const SizedBox(height: 32),
               _buildSaveButton(),
             ],
@@ -136,8 +139,8 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
             final DateTime? picked = await showDatePicker(
               context: context,
               initialDate: _startDate,
-              firstDate: DateTime(2000),
-              lastDate: DateTime.now(),
+              firstDate: DateTime.now(), // 오늘 날짜부터 선택 가능
+              lastDate: DateTime(2101), // 최대 선택 가능 날짜
               builder: (context, child) {
                 return Theme(
                   data: Theme.of(context).copyWith(
@@ -184,7 +187,55 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     );
   }
 
-  Widget _buildDailySmokingInput() {
+  Widget _buildTobaccoTypeSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '담배 종류',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue[800],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedTobaccoType,
+              isExpanded: true,
+              icon: Icon(Icons.arrow_drop_down, color: Colors.blue[600]),
+              items: _tobaccoTypes.map((String type) {
+                return DropdownMenuItem<String>(
+                  value: type,
+                  child: Text(
+                    type,
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _selectedTobaccoType = newValue;
+                  });
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDailySmokingSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -197,119 +248,83 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            hintText: '예) 20',
-            suffixText: '개비',
-            suffixStyle: TextStyle(color: Colors.grey[600]),
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.9),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide(color: Colors.grey.withOpacity(0.1)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide(color: Colors.blue[600]!),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: _dailySmoking,
+              isExpanded: true,
+              icon: Icon(Icons.arrow_drop_down, color: Colors.blue[600]),
+              items: List.generate(30, (index) => index + 1).map((int value) {
+                return DropdownMenuItem<int>(
+                  value: value,
+                  child: Text(
+                    '$value개비',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                );
+              }).toList(),
+              onChanged: (int? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _dailySmoking = newValue;
+                  });
+                }
+              },
             ),
           ),
-          onChanged: (value) {
-            setState(() {
-              _dailySmoking = int.tryParse(value) ?? 0;
-            });
-          },
         ),
       ],
     );
   }
 
-  Widget _buildNicknameInput() {
+  Widget _buildAddictionLevelSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '닉네임',
+          '흡연 충동 정도',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.blue[800],
           ),
         ),
-        const SizedBox(height: 8),
-        TextField(
-          decoration: InputDecoration(
-            hintText: '닉네임을 입력하세요',
-            prefixIcon: Icon(Icons.person_outline, color: Colors.blue[600]),
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.9),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide(color: Colors.grey.withOpacity(0.1)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide(color: Colors.blue[600]!),
-            ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.grey.withOpacity(0.1)),
           ),
-          onChanged: (value) {
-            setState(() {
-              _nickname = value;
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTotalMoneySavedInput() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '총 절약된 금액',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue[800],
+          child: Column(
+            children: _addictionLevels.map((level) {
+              return RadioListTile<String>(
+                title: Text(
+                  level,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 16,
+                  ),
+                ),
+                value: level,
+                groupValue: _addictionLevel,
+                activeColor: Colors.blue[600],
+                onChanged: (String? value) {
+                  if (value != null) {
+                    setState(() {
+                      _addictionLevel = value;
+                    });
+                  }
+                },
+              );
+            }).toList(),
           ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            hintText: '예) 10000',
-            prefixIcon: Icon(Icons.attach_money, color: Colors.blue[600]),
-            suffixText: '원',
-            suffixStyle: TextStyle(color: Colors.grey[600]),
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.9),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide(color: Colors.grey.withOpacity(0.1)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide(color: Colors.blue[600]!),
-            ),
-          ),
-          onChanged: (value) {
-            setState(() {
-              _totalMoneySaved = double.tryParse(value) ?? 0;
-            });
-          },
         ),
       ],
     );
@@ -358,16 +373,22 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     try {
       await FirebaseFirestore.instance.collection('users').add({
         'email': widget.email,
-        'nickname': _nickname,
         'start_date': Timestamp.fromDate(_startDate),
+        'cigarette': _selectedTobaccoType, // 담배 종류 저장
         'daily_smoking_amount': _dailySmoking,
-        'total_money_saved': _totalMoneySaved,
+        'addiction_level': _addictionLevel,
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('사용자 정보가 저장되었습니다.'),
+          content: Text('금연 설정이 저장되었습니다.'),
           backgroundColor: Colors.blue[600],
         ),
+      );
+
+      // HomePage로 이동
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()), // HomePage로 이동
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
