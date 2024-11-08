@@ -1,16 +1,9 @@
-# stop_smoke
+noSmoke는 흡연자와 사회적 약자의 윈윈을 도모하는 서비스입니다.
+체계적인 금연 관리를 통한 사용자의 금연성공과 건강증진을 도와줍니다. 
+사용자가 금연을 통해 절약한 금액을 한 눈에 보여주고 사회적 약자 계층에 대한 후원을 촉진해 사용자로 하여금 동기를 부여합니다.
 
-A new Flutter project.
+noSmoke는 금연인구를 도우며 함께 선한 영향력을 전파하고자 하는 목표를 공유합니다.
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+개발 : 김민수, 민승환
+개발 상태 : 초기 화면 및 DB 연결
+지속적인 업데이트 요함
