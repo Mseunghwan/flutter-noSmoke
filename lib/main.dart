@@ -2,6 +2,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'screens/LoginPage.dart';
 import 'firebase_options.dart';  // 자동 생성된 firebase_options 파일 import
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +39,34 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String selectedMetric = 'daysSmokeFree';
   String selectedTab = 'dailyGoal';
+  String nickname = ''; // 사용자 닉네임
+  int daysSmokeFree = 0; // 금연일 수
+  double totalMoneySaved = 0; // 절약 금액
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData(); // 사용자 데이터 가져오기
+  }
+
+  void _fetchUserData() async {
+    // Firestore에서 사용자 데이터 가져오기
+    User? user = FirebaseAuth.instance.currentUser; // 현재 로그인한 사용자
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      setState(() {
+        nickname = userDoc['nickname'];
+        Timestamp startDate = userDoc['start_date'];
+        int dailySmokingAmount = userDoc['daily_smoking_amount'];
+
+        // 금연일 수 계산
+        daysSmokeFree = DateTime.now().difference(startDate.toDate()).inDays;
+
+        // 절약 금액 계산 (금연일 수 * 하루 평균 개비 수 / 20 * 4500원)
+        totalMoneySaved = (daysSmokeFree * dailySmokingAmount / 20) * 4500;
+      });
+    }
+  }
 
   void selectMetric(String metric) {
     setState(() {
@@ -55,14 +85,14 @@ class _HomePageState extends State<HomePage> {
       case 'daysSmokeFree':
         return _buildAchievementCard(
           title: '금연 진행',
-          value: '7일',
+          value: '$daysSmokeFree일',
           icon: Icons.timer,
           iconColor: Colors.blue,
         );
       case 'moneySaved':
         return _buildAchievementCard(
           title: '절약 금액',
-          value: '100,000원',
+          value: '${totalMoneySaved.toStringAsFixed(0)}원',
           icon: Icons.attach_money,
           iconColor: Colors.green,
         );
@@ -111,16 +141,16 @@ class _HomePageState extends State<HomePage> {
   Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Text(
-          '환영합니다.',
+          '환영합니다, $nickname 님.', // 닉네임으로 변경
           style: TextStyle(
             fontSize: 40,
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text(
-          '김태린님의 금연 여정',
+        const Text(
+          '금연 여정',
           style: TextStyle(
             fontSize: 32,
             color: Colors.grey,
